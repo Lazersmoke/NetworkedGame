@@ -73,7 +73,7 @@ connHandler state connection = do
           st' <- readMVar state
           -- On the clock now
           let theshard = fromJust $ find ((==shard) . shardName) (shardsOf st')
-          (onPlayerJoin . gameDesc $ theshard) client
+          --(onPlayerJoin . gameDesc $ theshard) client
           -- Broadcast our connection to everyone else
           mapM_ (flip WS.sendTextData (T.pack $ "Join|" ++ cliName client) . cliConn) $ playersShard st' theshard
           -- Retrocast everyone elses connection to our connection

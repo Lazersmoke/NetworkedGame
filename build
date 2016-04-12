@@ -1,2 +1,7 @@
-ghc --make -Wall -o Game Game.hs
-rm *.hi *.o
+cabal update
+cabal configure
+cabal build
+cabal install
+cabal clean
+#ghc --make -Wall -o Game Game.hs
+#rm *.hi *.o

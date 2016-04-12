@@ -1,4 +1,9 @@
-module Game.Game (initialize, GameDescriptor, Client) where
+module Game.Game (
+  initialize,
+  GameDescriptor(..),
+  StopCode(..),
+  Client(..) 
+  ) where
 import Control.Monad
 import Data.List
 import Data.Maybe
@@ -26,6 +31,8 @@ mainLoop server = do
   state <- readMVar server
   let foundState = find (shardIsReady state) (shardsOf state)
   if isJust foundState
-    then void . forkIO $ (playGame . gameDesc . fromJust $ foundState) >>= (void . debugLog . show)
+    then do
+      let ourDesc = gameDesc . fromJust $ foundState
+      void . forkIO $ playGame ourDesc (playersShard state (fromJust foundState)) >>= (void . debugLog . show)
     else threadDelay 100000
 

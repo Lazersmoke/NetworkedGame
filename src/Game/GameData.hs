@@ -18,8 +18,7 @@ instance Eq Client where
   a == b = cliName a == cliName b
 
 data GameDescriptor = GameDescriptor {
-  playGame :: IO StopCode,
-  onPlayerJoin :: Client -> IO (),
+  playGame :: [Client] -> IO StopCode,
   descName :: String,
   shardNames :: [String],
   onMessage :: Client -> String -> IO ()}
