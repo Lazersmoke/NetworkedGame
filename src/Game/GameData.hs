@@ -14,8 +14,17 @@ data Client = Client {
   cliConn :: WS.Connection,
   cliShard :: String}
   
+instance Show Client where
+  show c = cliName c ++ show (cliReady c) 
+
 instance Eq Client where
   a == b = cliName a == cliName b
+
+instance Show ServerState where
+  show s = show (shards s) ++ show (clients s)
+
+instance Show ShardState where
+  show = shardName 
 
 data GameDescriptor = GameDescriptor {
   playGame :: [Client] -> IO StopCode,

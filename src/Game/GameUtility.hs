@@ -21,6 +21,12 @@ playersShard ss s = filter ((==shardName s) . cliShard) . clientsOf $ ss
 shardIsReady :: ServerState -> ShardState -> Bool
 shardIsReady ss s = all cliReady $ playersShard ss s
 
+shardIsEmpty :: ServerState -> ShardState -> Bool
+shardIsEmpty ss s = null $ playersShard ss s
+
+setClientReady :: Bool -> Client -> Client
+setClientReady tf cli = cli {cliReady = tf}
+
 readElem :: (Eq a, Read a) => [a] -> String -> Bool
 readElem = (. read) . flip elem 
 

@@ -1,7 +1,6 @@
+echo "[BUILD SCRIPT] Updating package listing"
 cabal update
-cabal configure
-cabal build
+echo "[BUILD SCRIPT] Configuring, Building, and Installing package"
 cabal install
+echo "[BUILD SCRIPT] Cleaning package"
 cabal clean
-#ghc --make -Wall -o Game Game.hs
-#rm *.hi *.o

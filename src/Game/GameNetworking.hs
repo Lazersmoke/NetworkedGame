@@ -54,12 +54,13 @@ connHandler state connection = do
               let ourGD = fromJust maybeGD
               newshard <- createShard ourGD <$> randomShardName ourGD
               debugLogClient (cliName client) $ "Spawning new shard " ++ shardName newshard 
+              --Add client first to prevent garbage collection of our shard (race condition)
+              (client {cliShard = shardName newshard} :) `overClientsOf` state
               (newshard:) `overShardsOf` state
-              (client:) `overClientsOf` state
               --Don't need to broadcast join into new shard
               tellClient ("Join|" ++ cliName client) client
               tellClient ("Connected to: " ++ shardName newshard) client
-              waitForGame (cliConn client) ourGD client
+              waitForGame (cliConn client) state ourGD client
             else tellClient "Invalid Game Name" client >> disconnect
       -- Invalid shard
       | shard `notElem` map shardName (shardsOf st) -> do
@@ -80,7 +81,7 @@ connHandler state connection = do
           mapM_ (WS.sendTextData accepted . T.pack . ("Join|"++) . cliName) . reverse $ playersShard st' theshard
           -- Add client
           (client:) `overClientsOf` state
-          waitForGame (cliConn client) (gameDesc theshard) client
+          waitForGame (cliConn client) state (gameDesc theshard) client
  
       where
         bannedNames = ["Info","Join","Ask"," ","","|",","]
@@ -101,12 +102,20 @@ connHandler state connection = do
           --Remove the client
           filter ((/= cliName client) . cliName) `overClientsOf` state
 
-waitForGame :: WS.Connection -> GameDescriptor -> Client -> IO ()
-waitForGame connection gd client = forever $ do
+waitForGame :: WS.Connection -> MVar ServerState -> GameDescriptor -> Client -> IO ()
+waitForGame connection ss gd client = forever $ do
   --Block until we get a client message, then unpack it
   msg <- T.unpack <$> WS.receiveData connection
   --Log to console if we need to (debug)
   debugLogClient (cliName client) msg
+  when ("ready" `isPrefixOf` msg) $ 
+    map (\x -> pWhen x client $ setClientReady True) `overClientsOf` ss
+  when ("unready" `isPrefixOf` msg) $ 
+    map (\x -> pWhen x client $ setClientReady False) `overClientsOf` ss
+  when ("debug" `isPrefixOf` msg) $ do
+    readState <- readMVar ss
+    print readState
+    
   --Call GD's function
   onMessage gd client msg
   --NOTE: This works because

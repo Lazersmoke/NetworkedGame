@@ -2,7 +2,7 @@ module Game.Game (
   initialize,
   GameDescriptor(..),
   StopCode(..),
-  Client(..) 
+  Client(..)
   ) where
 import Control.Monad
 import Data.List
@@ -27,12 +27,17 @@ initialize gds = do
 mainLoop :: MVar ServerState -> IO ()
 mainLoop server = do 
   state' <- readMVar server
-  removeEmptyShards state' `overShardsOf` server
+  when (any (shardIsEmpty state') (shards state')) $ putStrLn "Garbage"
+  filter (not . shardIsEmpty state') `overShardsOf` server
   state <- readMVar server
   let foundState = find (shardIsReady state) (shardsOf state)
   if isJust foundState
     then do
       let ourDesc = gameDesc . fromJust $ foundState
-      void . forkIO $ playGame ourDesc (playersShard state (fromJust foundState)) >>= (void . debugLog . show)
+      --doesnt unready TODO
+      _ <- forkIO $ do 
+        playGame ourDesc (playersShard state (fromJust foundState)) >>= debugLog . show
+        return ()
+      return ()
     else threadDelay 100000
-
+  mainLoop server
