@@ -2,7 +2,10 @@ module Game.Game (
   initialize,
   GameDescriptor(..),
   StopCode(..),
-  Client(..)
+  Client(..),
+  tellClient,
+  tellClients,
+  askClient
   ) where
 import Control.Monad
 import Data.List
@@ -33,6 +36,9 @@ mainLoop server = do
   let foundState = find (shardIsReady state) (shardsOf state)
   if isJust foundState
     then do
+      map (\x -> if cliShard x == shardName (fromJust foundState)
+        then x {cliReady = False} 
+        else x) `overClientsOf` server
       let ourDesc = gameDesc . fromJust $ foundState
       --doesnt unready TODO
       _ <- forkIO $ do 
