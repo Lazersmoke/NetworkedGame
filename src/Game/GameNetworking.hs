@@ -61,7 +61,7 @@ connHandler state connection = do
               tellClient ("Join|" ++ cliName client) client
               tellClient ("Connected to: " ++ shardName newshard) client
               waitForGame (cliConn client) state ourGD client
-            else tellClient "Invalid Game Name" client >> disconnect
+            else tellClient "Invalid Game Name" client 
       -- Invalid shard
       | shard `notElem` map shardName (shardsOf st) -> do
           debugLogClient (cliName client) "Sending invalid shard" 
@@ -71,16 +71,16 @@ connHandler state connection = do
       | otherwise -> flip finally disconnect $ do
           debugLogClient (cliName client) $ "Connecting to shard " ++ shard
           tellClient ("Connected to: " ++ shard) client
+
+          -- Add client
+          (client:) `overClientsOf` state
           st' <- readMVar state
           -- On the clock now
           let theshard = fromJust $ find ((==shard) . shardName) (shardsOf st')
-          --(onPlayerJoin . gameDesc $ theshard) client
           -- Broadcast our connection to everyone else
-          mapM_ (flip WS.sendTextData (T.pack $ "Join|" ++ cliName client) . cliConn) $ playersShard st' theshard
+          mapM_ (flip WS.sendTextData (T.pack $ "Join|" ++ cliName client) . cliConn) $ delete client $ playersShard st' theshard
           -- Retrocast everyone elses connection to our connection
           mapM_ (WS.sendTextData accepted . T.pack . ("Join|"++) . cliName) . reverse $ playersShard st' theshard
-          -- Add client
-          (client:) `overClientsOf` state
           waitForGame (cliConn client) state (gameDesc theshard) client
  
       where
