@@ -23,7 +23,6 @@ connHandler state connection = do
   msg <- WS.receiveData accepted
   -- Acknowledge connection
   WS.sendTextData accepted $ T.pack ("Welcome, " ++ T.unpack (T.drop 9 msg))
-  debugLogClient (T.unpack $ T.drop 9 msg) (T.unpack msg)
   --Send list of possible shards, refreshing it every second
   shardingThread <- forkIO . forever $ do
     shardList <- shardListing state
@@ -33,16 +32,15 @@ connHandler state connection = do
   shardChoice <- WS.receiveData accepted
   killThread shardingThread
   st <- readMVar state
-  debugLogClient (T.unpack $ T.drop 9 msg) $ T.unpack shardChoice
   case msg of
       -- Wrong Prefix
     _ | not $ prefix `T.isPrefixOf` msg -> do
-          debugLogClient (cliName client) "Sending Bad" 
+          debugLog $ "\"" ++ cliName client ++ "\" used the wrong protocol" 
           tellClient "Wrong message prefix, disconnecting" client
           disconnect
       -- Bad characters in username or username excplicity disallowed
       | any (`elem` cliName client) bannedChars || elem (cliName client) (bannedNames ++ map cliName (clientsOf st)) -> do
-          debugLog $ "Client attempted to join with bad username: " ++ cliName client
+          debugLog $ "Client attempted to join with bad username: \"" ++ cliName client ++ "\""
           tellClient "Info|Bad username" client
           disconnect
       -- Make new shard
@@ -53,7 +51,7 @@ connHandler state connection = do
             then do
               let ourGD = fromJust maybeGD
               newshard <- createShard ourGD <$> randomShardName ourGD
-              debugLogClient (cliName client) $ "Spawning new shard " ++ shardName newshard 
+              debugLog $ "Spawning new shard " ++ shardName newshard ++ " for client " ++ cliName client
               --Add client first to prevent garbage collection of our shard (race condition)
               (client {cliShard = shardName newshard} :) `overClientsOf` state
               (newshard:) `overShardsOf` state
@@ -64,14 +62,13 @@ connHandler state connection = do
             else tellClient "Invalid Game Name" client 
       -- Invalid shard
       | shard `notElem` map shardName (shardsOf st) -> do
-          debugLogClient (cliName client) "Sending invalid shard" 
+          debugLog $ cliName client ++ " attempted to join invalid shard \"" ++ shard ++ "\""
           tellClient "Invalid shard, disconnecting" client
           disconnect
       -- All is peachy
       | otherwise -> flip finally disconnect $ do
-          debugLogClient (cliName client) $ "Connecting to shard " ++ shard
+          debugLog $ cliName client ++ " connected to shard " ++ shard
           tellClient ("Connected to: " ++ shard) client
-
           -- Add client
           (client:) `overClientsOf` state
           st' <- readMVar state
@@ -138,3 +135,4 @@ tellClient s cl = WS.sendTextData (cliConn cl) . T.pack $ s
 
 askClient :: String -> Client -> IO ()
 askClient = tellClient . ("Ask|" ++) 
+
