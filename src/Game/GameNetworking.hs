@@ -112,6 +112,9 @@ waitForGame connection ss gd client = forever $ do
   when ("debug" `isPrefixOf` msg) $ do
     readState <- readMVar ss
     print readState
+  when ("Chat" `isPrefixOf` msg) $ do
+    readState <- readMVar ss
+    mapM_ (tellClient msg) (clientsOf readState)
     
   --Call GD's function
   onMessage gd client msg

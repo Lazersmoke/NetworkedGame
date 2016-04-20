@@ -3,7 +3,7 @@ module Game.GameData where
 import Network.WebSockets as WS
 import Control.Monad
 
-data StopCode = Stop String | Continue deriving (Show,Eq,Read)
+type StopCode = String 
 data ServerState = ServerState {
   shards :: [ShardState],
   clients :: [Client],

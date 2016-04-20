@@ -42,8 +42,10 @@ mainLoop server = do
       let ourDesc = gameDesc . fromJust $ foundState
       --doesnt unready TODO
       _ <- forkIO $ do 
-        playGame ourDesc (playersShard state (fromJust foundState)) >>= debugLog . show
-        return ()
+        stopcode <- playGame ourDesc (playersShard state (fromJust foundState))
+        tellClients ("Stop|" ++ stopcode) (playersShard state (fromJust foundState))
+        debugLog $ "Stopped shard: " ++ shardName (fromJust foundState) ++ " with code \"" ++ stopcode ++ "\""
       return ()
     else threadDelay 100000
   mainLoop server
+
