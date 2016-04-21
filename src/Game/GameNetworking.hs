@@ -125,7 +125,7 @@ waitForGame connection ss gd client = forever $ do
 shardListing :: MVar ServerState -> IO String
 shardListing ss = do
   st <- readMVar ss
-  return $ "Shards: " ++ unwords (map (\x -> "\n" ++ shardName x ++ ": " ++ show (length $ playersShard st x)) (shardsOf st))
+  return $ "Shards: " ++ unwords (map (\x -> "\n" ++ shardName x ++ ": " ++ show (length $ playersShard st x) ++ " " ++ (descName . gameDesc) x) (shardsOf st))
 
 tellEveryone :: String -> ServerState -> IO ()
 tellEveryone s ss = tellClients s (clientsOf ss)

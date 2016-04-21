@@ -1,4 +1,4 @@
-module Game.Game (
+module Game.NetworkedGameEngine (
   initialize,
   GameDescriptor(..),
   StopCode(..),
